@@ -13,13 +13,13 @@ const Header: React.FC = () => {
           onClick={() => navigate('/')}
         >
           <Droplets className="h-8 w-8" />
-          <h1 className="text-2xl font-bold">AquaSoft</h1>
+          <h1 className="text-2xl font-bold">SoftenerHUB</h1>
         </div>
         <button
           onClick={() => navigate('/add')}
           className="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition duration-200"
         >
-          Añadir Descalcificador
+          Nuevo Descalcificador
         </button>
       </div>
     </header>
