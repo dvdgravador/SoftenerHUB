@@ -7,30 +7,64 @@ import { getSofteners, searchSofteners } from '../utils/storage';
 const SoftenerList: React.FC = () => {
   const [softeners, setSofteners] = useState<Softener[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const loadSofteners = () => {
-      if (searchQuery.trim() === '') {
-        setSofteners(getSofteners());
-      } else {
-        setSofteners(searchSofteners(searchQuery));
+    const loadSofteners = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        if (searchQuery.trim() === '') {
+          const data = await getSofteners();
+          setSofteners(data);
+        } else {
+          const data = await searchSofteners(searchQuery);
+          setSofteners(data);
+        }
+      } catch (err) {
+        setError('Error al cargar los descalcificadores');
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
 
     loadSofteners();
-    // Add event listener for storage changes from other tabs
-    window.addEventListener('storage', loadSofteners);
-    
-    return () => {
-      window.removeEventListener('storage', loadSofteners);
-    };
   }, [searchQuery]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('es-ES').format(date);
   };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Cargando descalcificadores...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="text-center text-red-600">
+          <p>{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition duration-200"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-6">
