@@ -5,6 +5,8 @@ import { addSoftener, getSoftenerById, updateSoftener } from '../utils/storage';
 const SoftenerForm: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     model: '',
@@ -15,20 +17,32 @@ const SoftenerForm: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (id) {
-      const softener = getSoftenerById(id);
-      if (softener) {
-        setFormData({
-          name: softener.name,
-          model: softener.model,
-          location: softener.location,
-          installationDate: softener.installationDate,
-          manualUrl: softener.manualUrl || ''
-        });
-      } else {
-        navigate('/not-found');
+    const loadSoftener = async () => {
+      if (id) {
+        try {
+          setLoading(true);
+          const softener = await getSoftenerById(id);
+          if (softener) {
+            setFormData({
+              name: softener.name,
+              model: softener.model,
+              location: softener.location,
+              installationDate: softener.installationDate,
+              manualUrl: softener.manualUrl || ''
+            });
+          } else {
+            navigate('/not-found');
+          }
+        } catch (err) {
+          setError('Error al cargar el descalcificador');
+          console.error(err);
+        } finally {
+          setLoading(false);
+        }
       }
-    }
+    };
+
+    loadSoftener();
   }, [id, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -73,23 +87,51 @@ const SoftenerForm: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (validateForm()) {
-      if (id) {
-        updateSoftener(id, formData);
-        navigate(`/softener/${id}`);
-      } else {
-        const newSoftener = addSoftener(formData);
-        navigate(`/softener/${newSoftener.id}`);
+      try {
+        setLoading(true);
+        setError(null);
+        if (id) {
+          await updateSoftener(id, formData);
+          navigate(`/softener/${id}`);
+        } else {
+          const newSoftener = await addSoftener(formData);
+          navigate(`/softener/${newSoftener.id}`);
+        }
+      } catch (err) {
+        setError('Error al guardar el descalcificador');
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
     }
   };
 
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">
+            {id ? 'Cargando descalcificador...' : 'Guardando descalcificador...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
+
         <h2 className="text-2xl font-bold text-gray-800 mb-6">
           {id ? 'Editar Descalcificador' : 'Añadir Nuevo Descalcificador'}
         </h2>
@@ -185,6 +227,7 @@ const SoftenerForm: React.FC = () => {
             <button
               type="submit"
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200"
+              disabled={loading}
             >
               {id ? 'Guardar Cambios' : 'Guardar'}
             </button>
