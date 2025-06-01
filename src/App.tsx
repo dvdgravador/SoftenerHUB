@@ -21,7 +21,7 @@ function App() {
           </Routes>
         </main>
         <footer className="bg-gray-800 text-white py-4 text-center">
-          <p className="text-sm">© {new Date().getFullYear()} AquaSoft - Gestión de Descalcificadores</p>
+          <p className="text-sm">© {new Date().getFullYear()} SoftenerHUB - Gestión de Descalcificadores</p>
         </footer>
       </div>
     </Router>
