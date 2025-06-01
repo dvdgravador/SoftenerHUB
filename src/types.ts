@@ -5,6 +5,7 @@ export interface Softener {
   location: string;
   installationDate: string;
   manualUrl?: string;
+  created_at?: string;
 }
 
 export interface MaintenanceRecord {
@@ -12,6 +13,7 @@ export interface MaintenanceRecord {
   softenerId: string;
   date: string;
   description: string;
+  created_at?: string;
 }
 
 export interface HardnessMeasurement {
@@ -20,6 +22,7 @@ export interface HardnessMeasurement {
   date: string;
   value: number;
   unit: string;
+  created_at?: string;
 }
 
 export interface Note {
@@ -27,4 +30,5 @@ export interface Note {
   softenerId: string;
   date: string;
   content: string;
+  created_at?: string;
 }

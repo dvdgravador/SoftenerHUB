@@ -1,119 +1,127 @@
 import { Softener, MaintenanceRecord, HardnessMeasurement, Note } from '../types';
-
-// Local storage keys
-const SOFTENERS_KEY = 'softeners';
-const MAINTENANCE_KEY = 'maintenance-records';
-const HARDNESS_KEY = 'hardness-measurements';
-const NOTES_KEY = 'notes';
-
-// Helper function to get data from localStorage
-const getDataFromStorage = <T>(key: string): T[] => {
-  const data = localStorage.getItem(key);
-  return data ? JSON.parse(data) : [];
-};
-
-// Helper function to save data to localStorage
-const saveDataToStorage = <T>(key: string, data: T[]): void => {
-  localStorage.setItem(key, JSON.stringify(data));
-};
+import { supabase } from './supabase';
 
 // Softener functions
-export const getSofteners = (): Softener[] => {
-  return getDataFromStorage<Softener>(SOFTENERS_KEY);
+export const getSofteners = async (): Promise<Softener[]> => {
+  const { data, error } = await supabase
+    .from('softeners')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 };
 
-export const getSoftenerById = (id: string): Softener | undefined => {
-  const softeners = getSofteners();
-  return softeners.find(softener => softener.id === id);
+export const getSoftenerById = async (id: string): Promise<Softener | null> => {
+  const { data, error } = await supabase
+    .from('softeners')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) throw error;
+  return data;
 };
 
-export const addSoftener = (softener: Omit<Softener, 'id'>): Softener => {
-  const softeners = getSofteners();
-  const newSoftener: Softener = {
-    ...softener,
-    id: Date.now().toString(),
-  };
-  softeners.push(newSoftener);
-  saveDataToStorage(SOFTENERS_KEY, softeners);
-  return newSoftener;
+export const addSoftener = async (softener: Omit<Softener, 'id' | 'created_at'>): Promise<Softener> => {
+  const { data, error } = await supabase
+    .from('softeners')
+    .insert([softener])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 };
 
-export const updateSoftener = (id: string, softener: Omit<Softener, 'id'>): Softener => {
-  const softeners = getSofteners();
-  const updatedSoftener: Softener = { ...softener, id };
-  const index = softeners.findIndex(s => s.id === id);
-  
-  if (index !== -1) {
-    softeners[index] = updatedSoftener;
-    saveDataToStorage(SOFTENERS_KEY, softeners);
-  }
-  
-  return updatedSoftener;
+export const updateSoftener = async (id: string, softener: Omit<Softener, 'id' | 'created_at'>): Promise<Softener> => {
+  const { data, error } = await supabase
+    .from('softeners')
+    .update(softener)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 };
 
-export const searchSofteners = (query: string): Softener[] => {
-  const softeners = getSofteners();
-  const lowerQuery = query.toLowerCase();
-  return softeners.filter(
-    softener => 
-      softener.name.toLowerCase().includes(lowerQuery) || 
-      softener.model.toLowerCase().includes(lowerQuery)
-  );
+export const searchSofteners = async (query: string): Promise<Softener[]> => {
+  const { data, error } = await supabase
+    .from('softeners')
+    .select('*')
+    .or(`name.ilike.%${query}%,model.ilike.%${query}%`)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 };
 
 // Maintenance record functions
-export const getMaintenanceRecords = (softenerId: string): MaintenanceRecord[] => {
-  const records = getDataFromStorage<MaintenanceRecord>(MAINTENANCE_KEY);
-  return records
-    .filter(record => record.softenerId === softenerId)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+export const getMaintenanceRecords = async (softenerId: string): Promise<MaintenanceRecord[]> => {
+  const { data, error } = await supabase
+    .from('maintenance_records')
+    .select('*')
+    .eq('softener_id', softenerId)
+    .order('date', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 };
 
-export const addMaintenanceRecord = (record: Omit<MaintenanceRecord, 'id'>): MaintenanceRecord => {
-  const records = getDataFromStorage<MaintenanceRecord>(MAINTENANCE_KEY);
-  const newRecord: MaintenanceRecord = {
-    ...record,
-    id: Date.now().toString(),
-  };
-  records.push(newRecord);
-  saveDataToStorage(MAINTENANCE_KEY, records);
-  return newRecord;
+export const addMaintenanceRecord = async (record: Omit<MaintenanceRecord, 'id' | 'created_at'>): Promise<MaintenanceRecord> => {
+  const { data, error } = await supabase
+    .from('maintenance_records')
+    .insert([{ ...record, softener_id: record.softenerId }])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 };
 
 // Hardness measurement functions
-export const getHardnessMeasurements = (softenerId: string): HardnessMeasurement[] => {
-  const measurements = getDataFromStorage<HardnessMeasurement>(HARDNESS_KEY);
-  return measurements
-    .filter(measurement => measurement.softenerId === softenerId)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+export const getHardnessMeasurements = async (softenerId: string): Promise<HardnessMeasurement[]> => {
+  const { data, error } = await supabase
+    .from('hardness_measurements')
+    .select('*')
+    .eq('softener_id', softenerId)
+    .order('date', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 };
 
-export const addHardnessMeasurement = (measurement: Omit<HardnessMeasurement, 'id'>): HardnessMeasurement => {
-  const measurements = getDataFromStorage<HardnessMeasurement>(HARDNESS_KEY);
-  const newMeasurement: HardnessMeasurement = {
-    ...measurement,
-    id: Date.now().toString(),
-  };
-  measurements.push(newMeasurement);
-  saveDataToStorage(HARDNESS_KEY, measurements);
-  return newMeasurement;
+export const addHardnessMeasurement = async (measurement: Omit<HardnessMeasurement, 'id' | 'created_at'>): Promise<HardnessMeasurement> => {
+  const { data, error } = await supabase
+    .from('hardness_measurements')
+    .insert([{ ...measurement, softener_id: measurement.softenerId }])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 };
 
 // Notes functions
-export const getNotes = (softenerId: string): Note[] => {
-  const notes = getDataFromStorage<Note>(NOTES_KEY);
-  return notes
-    .filter(note => note.softenerId === softenerId)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+export const getNotes = async (softenerId: string): Promise<Note[]> => {
+  const { data, error } = await supabase
+    .from('notes')
+    .select('*')
+    .eq('softener_id', softenerId)
+    .order('date', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 };
 
-export const addNote = (note: Omit<Note, 'id'>): Note => {
-  const notes = getDataFromStorage<Note>(NOTES_KEY);
-  const newNote: Note = {
-    ...note,
-    id: Date.now().toString(),
-  };
-  notes.push(newNote);
-  saveDataToStorage(NOTES_KEY, notes);
-  return newNote;
+export const addNote = async (note: Omit<Note, 'id' | 'created_at'>): Promise<Note> => {
+  const { data, error } = await supabase
+    .from('notes')
+    .insert([{ ...note, softener_id: note.softenerId }])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 };
